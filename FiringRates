@@ -1,0 +1,61 @@
+%% Firing Rate
+% This script will return the firing rate by neuron and average firing rate
+% of all neurons across the entire timespan and across a particular state.
+% Requires state times to be in a Nx2 matrix. 
+%
+% Dependencies: 
+%   Neurons       struct of Neurons with names and times 
+%   ranges        ranges, including ranges.nTimes as Nx2 matrix 
+%   getRanges     [1 N] vector with ranges(x) that you want
+%
+%
+
+function [fRate] = FiringRates(Neurons, ranges, getRanges)
+
+% fTime = ranges(1).nTimes(end,2); 
+
+for y = 1:getRanges
+    rTimes(y).rName = ranges(y).type; %range times
+    rTimes(y).rTimes = ranges(y).nTimes;
+end 
+
+%get the overall firing rate
+for k = 1:length(Neurons)
+    cNeu = Neurons(k).times;
+    fRate(k).name = Neurons(k).name;
+    
+    for j = 1:length(rTimes) %for all selected ranges
+        crTimes = rTimes(j).rTimes; %current range times
+        crName = rTimes(j).rName; %current range name
+        
+        %get the average firing rate across the time, using the start and
+        %end of first rate; also get the standard deviation
+        if j == 1 
+            crTotalTime = diff(([crTimes(1,1), crTimes(end,2)]));
+            cNeuOfTotalTime = cNeu(cNeu>crTimes(1,1));
+            cNeuOfTotalTime = cNeuOfTotalTime(cNeuOfTotalTime<crTimes(end,2));
+            fRate(k).avgRate = length(cNeuOfTotalTime)/crTotalTime;
+            
+            %standard deviation in seconds
+            [stdAVG,~] = histcounts(cNeuOfTotalTime,ceil(cNeuOfTotalTime(end)));
+            fRate(k).stdAvgRate = std(stdAVG);
+        end 
+        
+        sumTimes = 0; %sum of range times
+        trSpikes = 0; %this range spikes
+        
+        [arDims,~] = size(crTimes); 
+        
+        for i = 1:arDims
+            curRange = crTimes(i,:); %defines current range
+            sumTimes = sumTimes + diff(curRange); %collect total amount of time in state
+            curSpikes = cNeu(cNeu>curRange(1)); %defines spikes greater than beginning of current range
+            curSpikes = length(curSpikes(curSpikes<curRange(2))); %gets spikes that are less than end of current range
+            trSpikes = trSpikes + curSpikes; %collects total number of spikes
+        end
+        
+        fRate(k).(crName) = trSpikes/sumTimes; %spikes per second = total number spikes/ total time in range
+    
+    end
+    
+end 
