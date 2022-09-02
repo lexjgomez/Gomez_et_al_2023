@@ -1,0 +1,55 @@
+%% lxKeepResponsive
+%   This script allows you to go through all of yor neurons and keep only
+%   the ones that are "responsive" to your chosen event/stimulus. In this
+%   version of the script, "responsiveness" is determined by the area under
+%   the curve in the post-event period. 
+%
+%   Inputs:
+%       Neurons     a structure containing all neurons and firing times
+%       events      event times in a 1xN double
+%       params
+%
+% Last updated: 3/29/22, LJG
+
+function [RNeurons, Neurons] = Keep_ResponsiveArea (Neurons, events, params)
+
+binsize = params.bins; 
+timewindow = params.window; %in seconds 
+preevent = params.prevent; %in seconds
+ROIs = params.ROI; %in binsize 
+tbins = 1000/binsize; 
+halfbins = preevent*tbins; 
+BLD = params.BLD;
+timesBL = params.timesBL; 
+
+
+for sk = 1:length(Neurons)
+    cS1 = Neurons(sk).times; 
+    diffs = lxcorrel(events, cS1, binsize, timewindow, preevent);
+    %remember, everything is in binsize
+    baseArea = trapz(diffs.countsps(1:BLD));
+    respArea = trapz(diffs.countsps(halfbins:ROIs+halfbins)); 
+    
+    if respArea > (baseArea*timesBL)
+        RNeurons(sk).times = Neurons(sk).times;
+    else
+        RNeurons(sk).times = []; 
+    end
+    
+end 
+
+%keep responsive neurons only
+%get rid of empty fields
+scount = 1; 
+for sc = 1:length(RNeurons)
+    if sum(RNeurons(sc).times) > 0
+        Neurons2(scount) = RNeurons(sc);
+        scount = scount+1; 
+    end 
+end 
+
+if scount == 1
+    Neurons2.times = []; RNeurons = Neurons2; 
+else
+    RNeurons = Neurons2;
+end 
