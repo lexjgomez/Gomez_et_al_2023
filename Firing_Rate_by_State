@@ -1,0 +1,44 @@
+%% Firing Rate By State 
+
+N1Means = []; N2Means = [];
+avgMeans = [];
+for k = 1:length(thisDB)
+    cCase = thisDB(k);
+    Neurons1 = cCase.Neurons1;
+    Neurons2 = cCase.Neurons2; 
+    ranges = cCase.ranges;
+    getRanges = [3]; 
+    [fRateN1] = FiringRates(Neurons1, ranges, getRanges); 
+    [fRateN2] = FiringRates(Neurons2, ranges, getRanges);
+
+    N1neu = zeros(length(fRateN1),3);
+    avgN1 = zeros(length(fRateN1),2);
+    for t = 1:length(fRateN1)
+        N1neu(t,1) = fRateN1(t).ActiveSleep/(fRateN1(t).ActiveSleep); %normalize by AS firing rate 
+        N1neu(t,2) = fRateN1(t).ActiveWake/(fRateN1(t).ActiveSleep);
+        N1neu(t,3) = fRateN1(t).BeQuiet/(fRateN1(t).ActiveSleep);
+        avgN1(t,1) = fRateN1(t).avgRate;
+        avgN1(t,2) = fRateN1(t).ActiveSleep;
+    end 
+
+    N2neu = zeros(length(fRateN2),3);
+    avgN2 = zeros(length(fRateN2),2);
+    for tt = 1:length(fRateN2)
+        N2neu(tt,1) = fRateN2(tt).ActiveSleep/(fRateN2(tt).ActiveSleep);
+        N2neu(tt,2) = fRateN2(tt).ActiveWake/(fRateN2(tt).ActiveSleep);
+        N2neu(tt,3) = fRateN2(tt).BeQuiet/(fRateN2(tt).ActiveSleep);
+        avgN2(tt,1) = fRateN2(tt).avgRate;
+        avgN2(tt,2) = fRateN2(tt).ActiveSleep;
+    end
+    
+    N1Means(k,1) = mean(N1neu(:,1));
+    N1Means(k,2) = mean(N1neu(:,2));
+    N1Means(k,3) = mean(N1neu(:,3));
+    N2Means(k,1) = mean(N2neu(:,1));
+    N2Means(k,2) = mean(N2neu(:,2));
+    N2Means(k,3) = mean(N2neu(:,3));
+    avgMeans(k,1) = mean(avgN1(:,1));
+    avgMeans(k,2) = mean(avgN1(:,2));
+    avgMeans(k,3) = mean(avgN2(:,1));
+    avgMeans(k,4) = mean(avgN2(:,2));
+end 
