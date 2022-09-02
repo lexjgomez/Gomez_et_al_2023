@@ -1,0 +1,210 @@
+%For Multiple Cases and Ages; the second part of this script will also plot
+%the PETHs of just responsive neurons 
+clc; close all;
+clearvars -except Database
+
+%SET DB
+thisDB = Database; 
+tEvents = thisDB(1).events;
+
+%setparams
+params.bins = 10; %bins in ms
+params.window = 1; %window size in seconds
+params.prevent = 0.5; %offset in seconds
+params.offset = 0; %bins from offset to beginning of ROI; integer only; standard is 3
+params.timesBL = 2; %times the baseline (sets threshold); for setBL 0, this is the number of STDs above baseline period
+params.setBL = 0; %0 = use BL fr of neuron pre-event, 1 = use average FR of the neuron  
+params.BLD = 30; %baseline window (BLW) in bins
+params.ROI = 20; %response window (RW) in bins
+Results = [];
+N1Responses = [];
+N2Responses = [];
+setBL = 0; 
+
+for eL = 1:length(tEvents)
+    cETypeNo = eL; 
+    cEType = tEvents.type; 
+    
+    for ani = 1:length(thisDB)
+        cCase = thisDB(ani);
+        ccName = cCase.name;
+        ccAge = cCase.age; 
+        Neurons1 = cCase.Neurons1;
+        Neurons2 = cCase.Neurons2;
+        cEvent = cCase.events(eL); 
+        N1Percent = [];
+        N2Percent = [];
+        %[params] = pcWhichParams(ccAge, setBL);
+
+            cevents = cEvent.times;
+            %[RNeurons1, Neurons1] = Keep_ResponsiveArea (Neurons1, cevents, params);
+            [RNeurons1, Neurons1] = Keep_Responsive (Neurons1, cevents, params);
+                RS1N = RNeurons1(1).times;
+                if isempty(RS1N) 
+                    N1Percent = 0; 
+                else
+                    N1Percent = length(RNeurons1)/length(Neurons1);
+                end 
+            %[RNeurons2, Neurons2] = Keep_ResponsiveArea (Neurons2, cevents, params);    
+            [RNeurons2, Neurons2] = Keep_Responsive (Neurons2, cevents, params);
+                RM1N = RNeurons2(1).times;
+                if isempty(RM1N) 
+                    N2Percent = 0; 
+                else
+                    N2Percent = length(RNeurons2)/length(Neurons2);
+                end 
+
+            Results(ani).name = ccName;
+            Results(ani).age = ccAge; 
+            Results(ani).N1 = N1Percent;
+            Results(ani).N2 = N2Percent;
+            Results(ani).events = cevents;
+
+            Results(ani).Responses(eL).RNeurons1 = RNeurons1;
+            Results(ani).Responses(eL).RNeurons2 = RNeurons2;
+            N1Responses(ani,eL) = N1Percent;
+            N2Responses(ani,eL) = N2Percent;
+            thisDB(ani).RM1Neurons = RNeurons1;
+            thisDB(ani).RM2Neurons = RNeurons2; 
+
+
+    end 
+
+    count8 = 1; 
+    count12 = 1; 
+    for k = 1:length(Results)
+        age = Results(k).age;
+        if age <= 9
+            lxmsP8n1(count8) = Results(k).N1;
+            lxmsP8n2(count8) = Results(k).N2;
+            count8 = count8 +1; 
+        else 
+            lxmsP12n1(count12) = Results(k).N1; 
+            lxmsP12n2(count12) = Results(k).N2; 
+            count12 = count12+1;
+        end 
+    end 
+    
+    clear count8 count12 k age; 
+
+    dotS8 = ones(1, length(lxmsP8n1)); dotM8 = 2*ones(1, length(lxmsP8n2));
+    dotS12 = ones(1, length(lxmsP12n1)); dotM12 = 2*ones(1, length(lxmsP12n2));
+    allDotsP8 = [dotS8 dotM8];
+    allMSP8 = [lxmsP8n1 lxmsP8n2];
+    aDOT = [1 2];
+    msPairs = [lxmsP8n1 lxmsP8n2];
+    m1SEMx = ([2 2]);
+    s1SEMx = ([1 1]);
+    
+    figure
+    subplot(2,2,1)
+    plot(dotS8, lxmsP8n1, 'b.', 'MarkerSize', 40)
+    hold 
+    plot(dotM8, lxmsP8n2, '.', 'Color', [0.4660 0.6740 0.1880], 'MarkerSize', 40)
+    for ii = 1:length(dotS8)
+        line(aDOT, [lxmsP8n1(ii) lxmsP8n2(ii)], 'Color', 'k')
+    end 
+    ylim([0 1])
+    xlim([0 3])
+    ax = gca;
+    ax.XTick = [1, 2];
+    ax.XTickLabels = {'N1'; 'N2'};
+    title('P8 Proportion Responsive')
+
+    subplot(2,2,2)
+    plot(dotS12, lxmsP12n1, 'b.', 'MarkerSize', 40)
+    hold
+    plot(dotM12, lxmsP12n2, '.', 'Color', [0.4660 0.6740 0.1880], 'MarkerSize', 40)
+    for ii = 1:length(dotS12)
+        line(aDOT, [lxmsP12n1(ii) lxmsP12n2(ii)], 'Color', 'k')
+    end 
+    ylim([0 1])
+    xlim([0 3])
+    ax = gca;
+    ax.XTick = [1, 2];
+    ax.XTickLabels = {'N1'; 'N2'};
+    title('P12 Proportion Responsive')
+    
+    s1SE8 = std(lxmsP8n1)/sqrt(length(lxmsP8n1)); s1SEM8 = [(mean(lxmsP8n1) - s1SE8) (mean(lxmsP8n1) + s1SE8)]; 
+    s1SE12 = std(lxmsP12n1)/sqrt(length(lxmsP12n1)); s1SEM12 = [(mean(lxmsP12n1) - s1SE12) (mean(lxmsP12n1) + s1SE12)]; 
+    m1SE8 = std(lxmsP8n2)/sqrt(length(lxmsP8n2)); m1SEM8 = [(mean(lxmsP8n2) - m1SE8) (mean(lxmsP8n2) + m1SE8)]; %
+    m1SE12 = std(lxmsP12n2)/sqrt(length(lxmsP12n2)); m1SEM12 = [(mean(lxmsP12n2) - m1SE12) (mean(lxmsP12n2) + m1SE12)]; 
+    
+    subplot(2,2,3)
+    plot(1, mean(lxmsP8n1), '.', 'Color', 'b', 'MarkerSize', 30)
+    hold 
+    plot(2, mean(lxmsP8n2), '.', 'Color',[0.4660 0.6740 0.1880], 'MarkerSize', 30)
+    line(aDOT, [mean(lxmsP8n1) mean(lxmsP8n2)], 'Color', 'k') 
+    line(s1SEMx, s1SEM8, 'Color', 'k')
+    line(m1SEMx, m1SEM8, 'Color', 'k')
+    ylim([0 1])
+    xlim([0 3])
+    ax = gca;
+    ax.XTick = [1, 2];
+    ax.XTickLabels = {'N1'; 'N2'};
+    title('P8 Mean Proportion Responsive')
+
+    subplot(2,2,4)
+    plot(1, mean(lxmsP12n1), 'b.', 'MarkerSize', 30)
+    hold 
+    plot(2, mean(lxmsP12n2), '.', 'Color', [0.4660 0.6740 0.1880], 'MarkerSize', 30)
+    line(aDOT, [mean(lxmsP12n1) mean(lxmsP12n2)], 'Color', 'k')
+    line(s1SEMx, s1SEM12, 'Color', 'k')
+    line(m1SEMx, m1SEM12, 'Color', 'k')
+    ylim([0 1])
+    xlim([0 3])
+    ax = gca;
+    ax.XTick = [1, 2];
+    ax.XTickLabels = {'N1'; 'N2'};
+    title('P12 Mean Proportion Responsive')
+    
+    tResults(eL).Results = Results; 
+    
+    clear Results lxmsP8s lxmsP8m lxmsP12s lxmsP12m mPercent sPercent
+    
+%     medResponses(:,1) = mean(N1Responses).';
+%     medResponses(:,2) = mean(N2Responses).';
+% 
+%     figure
+%     b = bar(medResponses,'FaceColor','flat');
+%     for k = 1:size(medResponses,2)
+%         b(k).CData = k;
+%     end
+%     ylim([0 1])
+%     xticks([1 2 3])
+%     xticklabels({'Twitch', 'Wake', 'Stim'})
+%     ylabel('Proportion Responsive')
+%     legend({'M1','M2'}, 'Location', 'north')
+%     title('Mean Responsive Neurons')
+% 
+%     m1Dots = ones(1,length(thisDB));
+%     m2Dots = 2*ones(1,length(thisDB));
+%     xx = [1 2];
+%     yy = [mean(medResponses(:,1)), mean(medResponses(:,2))];
+% 
+%     figure
+%     subplot(1,2,1)
+%     plot(m1Dots,mean(medResponses(:,1)), '.', 'Color',[0.4940 0.1840 0.5560],'MarkerSize',30)
+%     hold
+%     plot(m2Dots,mean(medResponses(:,2)), '.', 'Color','b','MarkerSize',30)
+%     plot(xx,yy, 'k', 'LineWidth', 1)
+%     xlim([0 3])
+%     ylim([0 1])
+%     xticks([0 1 2 3])
+%     xticklabels({'','M1','M2',''})
+%     title('Mean Response')
+% 
+%     subplot(1,2,2)
+%     plot(m1Dots,medResponses(:,1), '.', 'Color',[0.4940 0.1840 0.5560],'MarkerSize',30)
+%     hold
+%     plot(m2Dots,medResponses(:,2), '.', 'Color','b','MarkerSize',30)
+%     for tt = 1:length(thisDB)
+%         plot(xx,[medResponses(tt,1), medResponses(tt,2)], 'k', 'LineWidth', 1)
+%     end 
+%     xlim([0 3])
+%     ylim([0 1])
+%     xticks([0 1 2 3])
+%     xticklabels({'','M1','M2',''})
+%     title('Individual Responses')
+
+end 
