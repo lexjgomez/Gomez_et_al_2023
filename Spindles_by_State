@@ -1,0 +1,160 @@
+%% SPINDLES BY STATE
+% requires the database "SpindleStats" from Dryad
+
+DBlength = 2;
+for bT = 1:DBlength
+    
+    if bT == 1
+        DB = 'RFA';
+    else
+        DB = 'PFC';
+    end 
+    
+    thisDB = SpindleStats.(DB).Case;
+    %extract SB by State
+    for k = 1:length(thisDB)
+        curCase = thisDB(k);
+        cRanges = curCase.ranges; 
+        onsetR1 = curCase.Raw1.StartTime;
+        onsetR2 = curCase.Raw2.StartTime;
+
+        %Raw1
+        cdRange = []; curCount = []; addCount = []; tcRange = [];
+        for cr = 1:length(cRanges)
+            tcRange = cRanges(cr).nTimes; 
+            addCount = 0; 
+            for thruRanges = 1:length(tcRange)
+                cB = tcRange(thruRanges,1);
+                cE = tcRange(thruRanges,2);
+                inCurrentRange = onsetR1(onsetR1>cB); 
+                inCurrentRange = inCurrentRange(inCurrentRange<cE);
+                curCount = length(inCurrentRange);
+                addCount = addCount + curCount; 
+            end 
+            cdRange = sum(diff(tcRange.')); %get total range time
+            thisDB(k).ranges(cr).SBCount_R1 = addCount;
+            thisDB(k).ranges(cr).SBrate_R1 = 60/(1/(addCount/cdRange)); %sb per minute
+        end
+
+        %Raw2
+        cdRange = []; curCount = []; addCount = []; tcRange = [];
+        for cr = 1:length(cRanges)
+            tcRange = cRanges(cr).nTimes; 
+            addCount = 0; 
+            for thruRanges = 1:length(tcRange)
+                cB = tcRange(thruRanges,1);
+                cE = tcRange(thruRanges,2);
+                inCurrentRange = onsetR2(onsetR2>cB); 
+                inCurrentRange = inCurrentRange(inCurrentRange<cE);
+                curCount = length(inCurrentRange);
+                addCount = addCount + curCount; 
+            end 
+            cdRange = sum(diff(tcRange.')); %get total range time
+            thisDB(k).ranges(cr).SBCount_R2 = addCount;
+            thisDB(k).ranges(cr).SBrate_R2 = 60/(1/(addCount/cdRange));
+        end
+    end 
+    R1 = [];
+    R2 = [];
+
+    for gsb = 1:length(thisDB)
+        R1_AS = thisDB(gsb).ranges(1).SBCount_R1; 
+        R1_AW = thisDB(gsb).ranges(2).SBCount_R1; 
+        R1_BQ = thisDB(gsb).ranges(3).SBCount_R1; 
+        R1 = [R1; R1_AS, R1_AW, R1_BQ];
+
+        R2_AS = thisDB(gsb).ranges(1).SBCount_R2; 
+        R2_AW = thisDB(gsb).ranges(2).SBCount_R2; 
+        R2_BQ = thisDB(gsb).ranges(3).SBCount_R2; 
+        R2 = [R2; R2_AS, R2_AW, R2_BQ];
+    end 
+    
+    R1sums = sum(R1.');
+    R1s = R1./R1sums.';
+    R1sm = mean(R1s);
+    
+    R2sums = sum(R2.');
+    R2s = R2./R2sums.';
+    R2sm = mean(R2s);
+    
+    R1bs = []; R2bs = [];
+    for gbys = 1:length(thisDB)
+        R1_ASbs = thisDB(gbys).ranges(1).SBrate_R1; 
+        R1_AWbs = thisDB(gbys).ranges(2).SBrate_R1; 
+        R1_BQbs = thisDB(gbys).ranges(3).SBrate_R1; 
+        R1bs = [R1bs; R1_ASbs, R1_AWbs, R1_BQbs];
+
+        R2_ASbs = thisDB(gbys).ranges(1).SBrate_R2; 
+        R2_AWbs = thisDB(gbys).ranges(2).SBrate_R2; 
+        R2_BQbs = thisDB(gbys).ranges(3).SBrate_R2; 
+        R2bs = [R2bs; R2_ASbs, R2_AWbs, R2_BQbs];
+    end 
+    
+    sbrsN1 = [R1bs(:,1) R1bs(:,2)];
+    sbrsN2 = [R2bs(:,1) R2bs(:,2)];
+    
+    allSBRates = [sbrsN1 sbrsN2];
+    
+    aSEM = std(allSBRates,1)./sqrt(size(allSBRates,1));
+
+    figure
+    bar(mean(allSBRates,1))
+    hold on
+    er = errorbar(mean(allSBRates,1), aSEM);    
+    er.Color = [0 0 0];                            
+    er.LineStyle = 'none'
+    [m,n] = size(allSBRates);
+    for mm = 1:m
+        line([1 2], allSBRates(mm,[1 2]))
+        line([3 4], allSBRates(mm,[3 4]))
+    end 
+
+    ylim([0 15])
+    xlim([0 5])
+    ylabel('SB Rate Per Min')
+    xticks([1 2 3 4])
+    xticklabels({'N1_AS','N1_W','N2_AS','N2_W'})
+    title('SB Rate by State')
+    
+%     N1MeansM = mean(R1bs); N2MeansM = mean(R2bs);
+%     SEM1 = std(R1bs,1)./sqrt(size(R1bs,1));
+%     SEM2 = std(R2bs,1)./sqrt(size(R2bs,1));
+    
+%     figure
+%     subplot(1,2,1)
+%     bar(N1MeansM)
+%     hold on
+%     er = errorbar(N1MeansM, SEM1);    
+%     er.Color = [0 0 0];                            
+%     er.LineStyle = 'none';  
+%     [n,m] = size(R1bs); 
+%     for mm = 1:m
+%         [xData, yData] = Scatter_Jitter(mm, R1bs(:,mm));
+%         scatter(xData, yData)
+%     end
+%     xticks([1 2 3])
+%     xticklabels({'AS','AW','BQ'})
+%     ylabel('SB per minute')
+%     ylim([0 15])
+%     xlim([0 4])
+%     title('SB Rate, Raw1')    
+%     
+%     subplot(1,2,2)
+%     bar(N2MeansM)
+%     hold on
+%     er = errorbar(N2MeansM, SEM2);    
+%     er.Color = [0 0 0];                            
+%     er.LineStyle = 'none';  
+%     [n,m] = size(R2bs); 
+%     for mm = 1:m
+%         [xData, yData] = Scatter_Jitter(mm, R2bs(:,mm));
+%         scatter(xData, yData)
+%     end
+%     xticks([1 2 3])
+%     xticklabels({'AS','AW','BQ'})
+%     ylabel('SB per minute')
+%     ylim([0 15])
+%     xlim([0 4])
+%     title('SB Rate, Raw1')      
+    
+end 
