@@ -1,0 +1,79 @@
+%% lxKeepResponsive
+%   This script allows you to go through all of yor neurons and keep only
+%   the ones that are "responsive" to your chosen event/stimulus. You can
+%   determine responsivity by either 1) X the standard deviation (STD)
+%   from the baseline, or 2) by X the mean firig rate of that neuron
+%   across the whole time (not on a trial basis). This second method is
+%   better to use if you are comparing events that happen during different
+%   states (as active sleep usually has a higher firing rate). 
+%   
+%   Inputs:
+%       Neurons     a structure containing all neurons and firing times
+%       events      event times in a 1xN double
+%       params
+%
+% Last updated: 3/29/22, LJG
+% Last annotated: 7/13/2022, LJG
+
+function [RNeurons, Neurons] = Keep_Responsive (Neurons, events, params)
+
+binsize = params.bins; 
+timewindow = params.window; %in seconds 
+preevent = params.prevent; %in seconds
+ROIs = params.ROI; %in binsize
+ROIoff = params.offset; 
+tbins = 1000/binsize; 
+halfbins = preevent*tbins; 
+timesBL = params.timesBL;
+setBL = params.setBL;
+BLD = params.BLD;
+
+csindex = zeros(length(Neurons),1);
+    for my = 1:length(Neurons)
+        csx = Neurons(my).times;
+        csindex(my) = max(csx);
+    end
+nMax = max(csindex); 
+
+for sk = 1:length(Neurons)
+    cS1 = Neurons(sk).times; 
+    diffs = lxcorrel(events, cS1, binsize, timewindow, preevent);
+    %remember, everything is in binsize
+    sResponse = mean(diffs.countsps((halfbins+ROIoff):((ROIs+halfbins+ROIoff))));
+    
+    if setBL == 0
+        stdBL = std(diffs.countsps(1:BLD)); %standard dev of baseline window (BLW)
+        evBL = mean(diffs.countsps(1:BLD)); %mean of BLW
+        BL_tBL = (stdBL*timesBL) + evBL; %gets threshold: standard dev of BLW x number of stds you want + the BLW mean
+        
+    else
+        BL = length(cS1)/nMax;
+        BL_tBL = BL*timesBL;
+    end 
+    
+    if sResponse > BL_tBL
+        RNeurons(sk).times = Neurons(sk).times;
+    else
+        RNeurons(sk).times = []; 
+    end
+    
+end 
+
+%keep responsive neurons only
+%get rid of empty fields
+scount = 1; 
+for sc = 1:length(RNeurons)
+    if sum(RNeurons(sc).times) > 0
+        Neurons2(scount) = RNeurons(sc);
+        scount = scount+1; 
+    end 
+end 
+
+if scount == 1
+    Neurons2.times = []; 
+    RNeurons = Neurons2; %RNeurons ends up empty
+else
+    RNeurons = Neurons2; %Rneurons has your responsive neurons
+end 
+
+
