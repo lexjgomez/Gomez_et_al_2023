@@ -1,5 +1,6 @@
-%For Multiple Cases and Ages; the second part of this script will also plot
-%the PETHs of just responsive neurons 
+%For Multiple Cases and Ages
+% Requries the main database for either M1-M2 recordings or M1-mPFC recordings, which will be listed in the variable space as "Database" once imported
+
 clc; close all;
 clearvars -except Database
 
