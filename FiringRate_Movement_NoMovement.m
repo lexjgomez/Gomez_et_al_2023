@@ -1,21 +1,23 @@
 %% Firing Rate during Movement and Non-Movement Periods
 % Requries the lxM12DB or lxM1PFCDB which will be listed in the variable space as "Database"
 
+%separate database by age
 clearvars -except Database
 count8 = 1; count12 = 1; 
 for k = 1:length(Database)
     age = Database(k).age;
     if age < 10
-        lxmsP8(count8) = Database(k);
+        p8DB(count8) = Database(k);
         count8 = count8 +1; 
     else 
-        lxmsP12(count12) = Database(k); 
+        p12DB(count12) = Database(k); 
         count12 = count12+1;
     end 
 end 
 clear count8 count12 k age; 
 
-thisDB = lxmsP8;
+%define the database/age you want to look at
+thisDB = p8DB;
 %first, get your movement/no movement times
 
 for k = 1:length(thisDB)
