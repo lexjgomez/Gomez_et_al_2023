@@ -1,4 +1,22 @@
 %% Firing Rate By State 
+% Requries the lxM12DB or lxM1PFCDB which will be listed in the variable space as "Database"
+
+%separate database by age
+count8 = 1; count12 = 1;
+for k = 1:length(Database)
+    age = Database(k).age;
+    if age < 10
+        p8DB(count8) = Database(k);
+        count8 = count8 +1; 
+    else 
+        p12DB(count12) = Database(k); 
+        count12 = count12+1;
+    end 
+end 
+clear count8 count12 k age; 
+
+% define your current database
+thisDB = p8DB;
 
 N1Means = []; N2Means = [];
 avgMeans = [];
