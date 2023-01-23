@@ -1,4 +1,5 @@
 %% Firing Rate during Movement and Non-Movement Periods
+% Requries the lxM12DB or lxM1PFCDB which will be listed in the variable space as "Database"
 
 clearvars -except Database
 count8 = 1; count12 = 1; 
