@@ -1,5 +1,5 @@
 %% Firing Rate during Movement and Non-Movement Periods
-% Requries the lxM12DB or lxM1PFCDB which will be listed in the variable space as "Database"
+% Requries the main database for either M1-M2 recordings or M1-mPFC recordings, which will be listed in the variable space as "Database" once imported
 
 %separate database by age
 clearvars -except Database
